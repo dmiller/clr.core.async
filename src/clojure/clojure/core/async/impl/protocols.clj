@@ -11,8 +11,6 @@
 (ns ^{:skip-wiki true}
   clojure.core.async.impl.protocols)
 
-(ns-unmap *ns* 'Buffer)
-
 (defprotocol ReadPort
   (take! [port fn1-handler] "derefable val if taken, nil if take was enqueued"))
 
@@ -27,7 +25,7 @@
   (lock-id [h] "a unique id for lock acquisition order, 0 if no lock")
   (commit [h] "commit to fulfilling its end of the transfer, returns cb. Must be called within lock"))
 
-(defprotocol Buffer
+(defprotocol ABuffer
   (full? [b])
   (remove! [b])
   (add! [b itm]))

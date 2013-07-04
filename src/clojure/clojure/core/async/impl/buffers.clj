@@ -14,11 +14,11 @@
 (set! *warn-on-reflection* true)
 
 (deftype FixedBuffer [^|System.Collections.Generic.LinkedList`1[System.Object]| buf ^long n]       ;;; LinkedList
-  impl/Buffer
+  impl/ABuffer
   (full? [this]
     (= (.Count buf) n))                                            ;;; .size
   (remove! [this]
-    (.RemoveLast buf))                                             ;;; .removeLast
+    (let [x (.Value (.Last buf))] (.RemoveLast buf) x))                     ;;; .removeLast -- added let
   (add! [this itm]
     (assert (not (impl/full? this)) "Can't add to a full buffer")
     (.AddFirst buf itm))                                           ;;;  addFirst
@@ -31,11 +31,11 @@
 
 
 (deftype DroppingBuffer [^|System.Collections.Generic.LinkedList`1[System.Object]| buf ^long n]    ;;; LinkedList
-  impl/Buffer
+  impl/ABuffer
   (full? [this]
     false)
   (remove! [this]
-    (.RemoveLast buf))                                            ;;; .removeLast
+    (let [x (.Value (.Last buf))] (.RemoveLast buf) x))                   ;;; .removeLast -- added let
   (add! [this itm]
     (when-not (= (.Count buf) n)                                 ;;; .size
       (.AddFirst buf itm)))                                      ;;; .addFirst
@@ -47,11 +47,11 @@
   (DroppingBuffer. (|System.Collections.Generic.LinkedList`1[System.Object]|.) n))                  ;;; LinkedList.
 
 (deftype SlidingBuffer [^|System.Collections.Generic.LinkedList`1[System.Object]| buf ^long n]      ;;; LinkedList
-  impl/Buffer
+  impl/ABuffer
   (full? [this]
     false)
   (remove! [this]
-    (.RemoveLast buf))                                           ;;; .removeLast
+    (let [x (.Value (.Last buf))] (.RemoveLast buf) x))                   ;;; .removeLast -- added let
   (add! [this itm]
     (when (= (.Count buf) n)                                     ;;; .size
       (impl/remove! this))
