@@ -69,6 +69,6 @@ namespace TaskExtensions
     {
         public AtomicReferenceArray(int length) : base(length)
         {
-        }
+        } 
     }
 }
