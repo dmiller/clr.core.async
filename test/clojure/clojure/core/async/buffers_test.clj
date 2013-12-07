@@ -21,20 +21,20 @@
   (let [fb (fixed-buffer 2)]
     (is (= 0 (count fb)))
 
-    (add! fb :1)
+    (add! fb :one)
     (is (= 1 (count fb)))
 
-    (add! fb :2)
+    (add! fb :two)
     (is (= 2 (count fb)))
 
     (is (full? fb))
-    (is (throws? (add! fb :3)))
+    (is (throws? (add! fb :three)))
 
-    (is (= :1 (remove! fb)))
+    (is (= :one (remove! fb)))
     (is (not (full? fb)))
 
     (is (= 1 (count fb)))
-    (is (= :2 (remove! fb)))
+    (is (= :two (remove! fb)))
 
     (is (= 0 (count fb)))
     (is (throws? (remove! fb)))))
@@ -43,21 +43,21 @@
   (let [fb (dropping-buffer 2)]
     (is (= 0 (count fb)))
 
-    (add! fb :1)
+    (add! fb :one)
     (is (= 1 (count fb)))
 
-    (add! fb :2)
+    (add! fb :two)
     (is (= 2 (count fb)))
 
     (is (not (full? fb)))
-    (is (not (throws? (add! fb :3))))
+    (is (not (throws? (add! fb :three))))
     (is (= 2 (count fb)))
 
-    (is (= :1 (remove! fb)))
+    (is (= :one (remove! fb)))
     (is (not (full? fb)))
 
     (is (= 1 (count fb)))
-    (is (= :2 (remove! fb)))
+    (is (= :two (remove! fb)))
 
     (is (= 0 (count fb)))
     (is (throws? (remove! fb)))))
@@ -66,21 +66,21 @@
   (let [fb (sliding-buffer 2)]
     (is (= 0 (count fb)))
 
-    (add! fb :1)
+    (add! fb :one)
     (is (= 1 (count fb)))
 
-    (add! fb :2)
+    (add! fb :two)
     (is (= 2 (count fb)))
 
     (is (not (full? fb)))
-    (is (not (throws? (add! fb :3))))
+    (is (not (throws? (add! fb :three))))
     (is (= 2 (count fb)))
     
-    (is (= :2 (remove! fb)))
+    (is (= :two (remove! fb)))
     (is (not (full? fb)))
 
     (is (= 1 (count fb)))
-    (is (= :3 (remove! fb)))
+    (is (= :three (remove! fb)))
 
     (is (= 0 (count fb)))
     (is (throws? (remove! fb)))))
