@@ -29,7 +29,6 @@
     (reify
      ILock                                            ;;; Lock
      (lock [_] (loop [got (.compareAndSet cas 0 1)]
-                 (if got
-                   nil
+                 (when-not got
                    (recur (.compareAndSet cas 0 1)))))
      (unlock [_] (.set cas 0)))))
