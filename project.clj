@@ -10,6 +10,7 @@
                                     :sign-releases  false}]]
   :source-paths ["src/clojure"]
   :test-paths ["test/clojure"]
+  :aot [clojure.core.async.util.BoundedTaskScheduler]
   :clr {:cmd-templates  {:clj-exe   [#_"mono" [CLJCLR15_40 %1]]
                          :clj-dep   [#_"mono" ["target/clr/clj/Debug 4.0" %1]]
                          :clj-url   "https://github.com/downloads/clojure/clojure-clr/clojure-clr-1.4.0-Debug-4.0.zip"
