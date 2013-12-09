@@ -7,8 +7,6 @@
 ;   You must not remove this notice, or any other, from this software.
 ;;; Ported to ClojureCLR by David Miller.
 
-(assembly-load-from "TaskExtensions.dll")
-
 ;; by Timothy Baldridge
 ;; April 13, 2013
 
@@ -17,10 +15,11 @@
   (:refer-clojure :exclude [all])
   (:require [clojure.pprint :refer [pprint]]
             [clojure.core.async.impl.protocols :as impl]
-			[clojure.core.async.impl.mutex :as mutex]           ;;; DM:Added
+			[clojure.core.async.impl.mutex :as mutex]             ;;; DM:Added
+			[clojure.core.async.util.atomic :as atomic]            ;;; DM:Added
             [clojure.core.async.impl.dispatch :as dispatch])
-  (:import [clojure.core.async.impl.mutex ILock]                ;;; [java.util.concurrent.locks Lock]
-           [TaskExtensions AtomicReferenceArray]))              ;;; [java.util.concurrent.atomic AtomicReferenceArray]
+  (:import [clojure.core.async.impl.mutex ILock]                  ;;; [java.util.concurrent.locks Lock]
+           [clojure.core.async.util.atomic IAtomicArray]))        ;;; [java.util.concurrent.atomic AtomicReferenceArray]
 
 (defn debug [x]
   (pprint x)
@@ -33,10 +32,10 @@
 (def ^:const BINDINGS-IDX 3)
 (def ^:const USER-START-IDX 4)
 
-(defn aset-object [^AtomicReferenceArray arr idx ^Object o]
+(defn aset-object [^IAtomicArray arr idx ^Object o]                ;;; AtomicReferenceArray
   (.set arr idx o))
 
-(defn aget-object [^AtomicReferenceArray arr idx]
+(defn aget-object [^IAtomicArray arr idx]                          ;;; AtomicReferenceArray
   (.get arr idx))
 
 (defmacro aset-all!
