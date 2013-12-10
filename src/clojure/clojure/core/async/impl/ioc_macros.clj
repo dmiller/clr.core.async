@@ -717,7 +717,7 @@
         local-map (atom {::next-idx local-start-idx})
         block-catches (:block-catches machine)]
     `(fn state-machine#
-       ([] (aset-all! (AtomicReferenceArray. ~state-arr-size)
+       ([] (aset-all! (atomic/atomic-ref-array ~state-arr-size)                              ;;; AtomicReferenceArray.
                       ~FN-IDX state-machine#
                       ~STATE-IDX ~(:start-block machine)))
        ([~state-sym]
