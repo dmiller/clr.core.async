@@ -32,7 +32,7 @@
 ;;;       (impl/exec [this r]
 ;;;         (.execute executor-svc ^Runnable r)))))
 
-(defonce the-scheduler  (TaskFactory. (BoundedTaskScheduler.  (+ 2 conc/processors))))
+(defonce ^TaskFactory the-scheduler  (TaskFactory. (BoundedTaskScheduler.  (+ 2 conc/processors))))
 
 (defn bounded-task-executor
   ([] (bounded-task-executor the-scheduler))

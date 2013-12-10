@@ -50,25 +50,28 @@
 (defn skip-list-node
   ([level] (skip-list-node nil nil level))
   ([k v level]
-    (let [arr (make-array Object (inc level))]            ;;; DM: Added Object
+    (let [^|System.Object[]| arr (make-array Object (inc level))]            ;;; DM: Added Object, added type hint
       (loop [i 0]
         (when (< i (alength arr))
           (aset arr i nil)
           (recur (inc i))))
       (SkipListNode. k v arr))))
 
+(defmacro aget-forward [x i]                                                               ;;; DM: Added
+  `(aget ^|System.Object[]| (.-forward ~(with-meta x {:tag SkipListNode})) ~i))            ;;; DM: Added
+	  
 (defn least-greater-node
   ([x k level] (least-greater-node x k level nil))
   ([x k level update]
     (if-not (neg? level)
-      (let [x (loop [x x]
-                (if-let [x' (aget (.-forward x) level)]
+      (let [x (loop [^SkipListNode x x]
+                (if-let [^SkipListNode x' (aget-forward x level)]
                   (if (< (.-key x') k)
                     (recur x')
                     x)
                   x))]
         (when-not (nil? update)
-          (aset update level x))
+          (aset ^|System.Object[]| update level x))
         (recur x k (dec level) update))
       x)))
 
@@ -82,9 +85,9 @@
 (deftype SkipList [header ^:volatile-mutable level]                      ;;; ^:mutable
   ISkipList                                                              ;;; Object
   (put [coll k v]
-    (let [update (make-array Object MAX_LEVEL)                           ;;; DM: Added Object
-          x (least-greater-node header k level update)
-          x (aget (.-forward x) 0)]
+    (let [^|System.Object[]| update (make-array Object MAX_LEVEL)                           ;;; DM: Added Object and type hint
+          ^SkipListNode x (least-greater-node header k level update)
+          ^SkipListNode x (aget-forward x 0)]
       (if (and (not (nil? x)) (== (.-key x) k))
         (set! (.-val x) v)
         (let [new-level (random-level)]
@@ -94,35 +97,35 @@
                 (aset update i header)
                 (recur (inc i))))
             (set! level new-level))
-          (let [x (skip-list-node k v (make-array Object new-level))]    ;;; DM: Added Object
+          (let [^SkipListNode x (skip-list-node k v (make-array Object new-level))]    ;;; DM: Added Object
             (loop [i 0]
               (when (<= i level)
-                (let [links (.-forward (aget update i))]
-                  (aset (.-forward x) i (aget links i))
+                (let [^|System.Object[]| links (.-forward ^SkipListNode (aget update i))]
+                  (aset ^|System.Object[]| (.-forward x) i (aget links i))
                   (aset links i x)))))))))
 
   (remove [coll k]
-    (let [update (make-array Object MAX_LEVEL)                           ;;; DM: Added Object
-          x (least-greater-node header k level update)
-          x (aget (.-forward x) 0)]
+    (let [^|System.Object[]| update (make-array Object MAX_LEVEL)                           ;;; DM: Added Object
+          ^SkipListNode x (least-greater-node header k level update)
+          ^SkipListNode x (aget-forward x 0)]
       (when (and (not (nil? x)) (== (.-key x) k))
         (loop [i 0]
           (when (<= i level)
-            (let [links (.-forward (aget update i))]
+            (let [^|System.Object[]| links (.-forward ^SkipListNode (aget update i))]
               (if (identical? (aget links i) x)
                 (do
-                  (aset links i (aget (.-forward x) i))
+                  (aset links i (aget-forward x i))
                   (recur (inc i)))
                 (recur (inc i))))))
         (while (and (> level 0)
-                    (nil? (aget (.-forward header) level)))
+                    (nil? (aget-forward ^SkipListNode header level)))
           (set! level (dec level))))))
 
   (ceilingEntry [coll k]
-    (loop [x header level level]
+    (loop [^SkipListNode x header level level]
       (if-not (neg? level)
         (let [nx (loop [x x]
-                   (let [x' (aget (.-forward x) level)]
+                   (let [^SkipListNode x' (aget-forward ^SkipListNode x level)]
                      (when-not (nil? x')
                        (if (>= (.-key x') k)
                          x'
@@ -134,10 +137,10 @@
           x))))
   
   (floorEntry [coll k]
-    (loop [x header level level]
+    (loop [^SkipListNode x header level level]
       (if-not (neg? level)
-        (let [nx (loop [x x]
-                   (let [x' (aget (.-forward x) level)]
+        (let [nx (loop [^SkipListNode x x]
+                   (let [^SkipListNode x' (aget-forward ^SkipListNode x level)]
                      (if-not (nil? x')
                        (if (> (.-key x') k)
                          x
@@ -155,9 +158,9 @@
     (letfn [(iter [node]
               (lazy-seq
                 (when-not (nil? node)
-                  (cons [(.-key node) (.-val node)]
-                    (iter (aget (.-forward node) 0))))))]
-      (iter (aget (.-forward header) 0))))
+                  (cons [(.-key ^SkipListNode node) (.-val ^SkipListNode node)]
+                    (iter (aget-forward ^SkipListNode node 0))))))]
+      (iter (aget-forward ^SkipListNode header 0))))
 
   ;;;IPrintWithWriter
   ;;;(-pr-writer [coll writer opts]
@@ -208,10 +211,10 @@
 (defn timeout
   "returns a channel that will close after msecs"
   [msecs]
-  (let [timeout (+ (current-time-millis) msecs)            ;;;  (System/currentTimeMillis)
-        me (.ceilingEntry timeouts-map timeout)]
-    (or (when (and me (< (.getKey me) (+ timeout TIMEOUT_RESOLUTION_MS)))
-          (.channel ^TimeoutQueueEntry (.getValue me)))
+  (let [timeout (+ (current-time-millis) msecs)                                  ;;;  (System/currentTimeMillis)
+        ^SkipListNode me (.ceilingEntry timeouts-map timeout)]                   ;;;  Added type hint
+    (or (when (and me (< (.-key me) (+ timeout TIMEOUT_RESOLUTION_MS)))          ;;;  .getKey
+          (.channel ^TimeoutQueueEntry (.-val me)))                              ;;; .getValue
         (let [timeout-channel (channels/chan nil)
               timeout-entry (TimeoutQueueEntry. timeout-channel timeout)]
           (.put timeouts-map timeout timeout-entry)
@@ -223,7 +226,7 @@
   (let [q timeouts-queue]
     (loop []
       (let [^TimeoutQueueEntry tqe (.take q)]
-        (.remove timeouts-map (.timestamp tqe) tqe)
+        (.remove ^ISkipList timeouts-map (.timestamp tqe))
         (impl/close! tqe))
       (recur))))
 
