@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Clr.Util.Concurrent.Generic;
+using clojure.core.async;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 

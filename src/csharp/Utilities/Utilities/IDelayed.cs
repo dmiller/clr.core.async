@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Clr.Util.Concurrent
+namespace clojure.core.async
 {
     public interface IDelayed : IComparable<IDelayed>
     {

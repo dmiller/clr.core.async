@@ -13,7 +13,7 @@
   (:require [clojure.core.async.impl.protocols :as impl]
             [clojure.core.async.impl.channels :as channels])
   ;;;(:import [java.util.concurrent DelayQueue Delayed TimeUnit ConcurrentSkipListMap])
-  (:import [Clr.Util.Concurrent IDelayed DelayQueue]
+  (:import [clojure.core.async IDelayed DelayQueue]
            [clojure.lang  Seqable]))
 
 (set! *warn-on-reflection* true)

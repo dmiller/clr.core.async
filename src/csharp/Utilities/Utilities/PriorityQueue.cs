@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Clr.Util.Concurrent.Generic
+namespace clojure.core.async
 {
     /// <summary>
     /// Basic priority queue based on a heap.  Sorted either by given comparision function or by the natural (IComparable) ordering of elements.

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
-namespace Clr.Util.Concurrent.Generic
+namespace clojure.core.async
 {
     /// <summary>
     /// Minimal implementation of java.util.concurrent.DelayQueue
@@ -162,11 +162,9 @@ namespace Clr.Util.Concurrent.Generic
         #region Implementation
         #endregion
     }
-}
 
-namespace Clr.Util.Concurrent
-{
-    public class DelayQueue : Clr.Util.Concurrent.Generic.DelayQueue<IDelayed>
+
+    public class DelayQueue : DelayQueue<IDelayed>
     {
     }
 }
