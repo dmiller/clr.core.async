@@ -228,7 +228,7 @@
       (recur))))
 
 (defonce timeout-daemon
-  (doto (System.Threading.Thread. (gen-delegate System.Threading.ThreadStart [] (timeout-worker)))   ;;;(Thread. ^Runnable timeout-worker "clojure.core.async.timers/timeout-daemon")
+  (doto (System.Threading.Thread. ^System.Threading.ThreadStart (gen-delegate System.Threading.ThreadStart [] (timeout-worker)))   ;;;(Thread. ^Runnable timeout-worker "clojure.core.async.timers/timeout-daemon")
     (.set_Name "clojure.core.async.timers/timeout-daemon")                                           ;;; DM:Added
     (.set_IsBackground true)                                                                         ;;;(.setDaemon true)
     (.Start)))                                                                                       ;;;
