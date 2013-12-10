@@ -17,14 +17,15 @@
 
 (ns clojure.core.async.util.BoundedTaskScheduler
   (:import [System.Threading.Tasks TaskScheduler Task]
-	         [System.Threading Monitor ThreadPool WaitCallback])
+	       [System.Threading Monitor ThreadPool WaitCallback])
   (:gen-class
 	  :main false
 	  :state state
 	  :extends System.Threading.Tasks.TaskScheduler
 	  :constructors {[Int64][]}
 	  :init init
-	  :exposes-methods {TryExecuteTask try-execute-task})	  
+	  :exposes-methods {TryExecuteTask parentTryExecuteTask
+	                    TryDequeue parentTryDequeue})	  
  )
 
 (set! *warn-on-reflection* true)
@@ -53,7 +54,7 @@
   
 (deftype BtsState [^long max-degree 
                    ^|System.Collections.Generic.LinkedList`1[System.Threading.Tasks.Task]| tasks 
-				   ^clojure.lang.Atom delegates-queued-or-running])
+				   ^clojure.lang.Atom num-delegates])
 
  
 (defn -init [max-degree]
@@ -64,35 +65,13 @@
                (|System.Collections.Generic.LinkedList`1[System.Threading.Tasks.Task]|.)
 			   (atom 0))])
 
-(defn- max-degree 
-  "The maximum degree of concurrency"
-  [this]
-  (-> this .state .max-degree))
+(defmacro get-state [this field]
+  `(~field ^BtsState (.state ^clojure.core.async.util.BoundedTaskScheduler ~this)))
   
-(defn- tasks
-  "The tasks scheduled in this scheduler.  Should be manipulated when locked only."
-  [this]
-  (-> this .state .tasks))
-  
-(defn- num-delegates-queued-or-running
-  "The number of delegates queued or running"
-  [this]
-  @(-> this .state .delegates-queued-or-running))
-  
-(defn- update-delegate-count! 
+(defmacro update-delegate-count! 
   "Atomic updated of delegate count"
   [this f]
-  (swap! (-> this .state .delegates-queued-or-running) f))
-  
-(defn- inc-delegate-count! 
-   "Increment delegate count"
-   [this]
-   (update-delegate-count! this inc))
-
-(defn- dec-delegate-count! 
-  "Decrement delegate count"
-  [this]
-  (update-delegate-count! this dec))
+  `(swap! ^clojure.lang.Atom (get-state ~this .num-delegates) ~f))
   
   
 ;; Low-level thread pool management  
@@ -105,20 +84,21 @@
   (try 
     ;; process all available items in queue
 	(loop []
-	  (let [ts (tasks this)
+	  (let [^|System.Collections.Generic.LinkedList`1[System.Threading.Tasks.Task]|  
+	        tasks (get-state this .tasks)
   	        ^Task item
-          	  (locking ts
+          	  (locking tasks
 			    ;; When there are no more items to be processed,
 				;; note that we are done processing and yield no item
 				;; else get (and remove) first item.
-				(if (zero? (.Count ts))
-				  (do (dec-delegate-count! this)
+				(if (zero? (.Count tasks))
+				  (do (update-delegate-count! this dec)
 				      nil)
-				(let [t1 (-> ts (.First) (.Value))]
-				  (.RemoveFirst ts)
+				(let [t1 (-> tasks (.First) (.Value))]
+				  (.RemoveFirst tasks)
 				  t1)))]
 	    (when item
-	      (.TryExecuteTask this item)
+	      (.parentTryExecuteTask this item)
 		  (recur))))
 	(finally 
 	  (set-current-thread-processing-items! false))))
@@ -142,11 +122,12 @@
   If there aren't enough delegates currently queued or running to process tasks,
   schedule another."
   [this ^Task task]
-  (let [ts (tasks this)]
-    (locking ts
-	  (.AddLast ts task)
-	  (when (< (long (num-delegates-queued-or-running this)) (max-degree this))
-  	    (inc-delegate-count! this)
+  (let [^|System.Collections.Generic.LinkedList`1[System.Threading.Tasks.Task]| 
+        tasks (get-state this .tasks)]
+    (locking tasks
+	  (.AddLast tasks task)
+	  (when (< (long @(get-state this .num-delegates)) (get-state this .max-degree))
+  	    (update-delegate-count! this inc)
         (notify-thread-pool-of-pending-work this)))))
 
 						
@@ -159,30 +140,32 @@
   (when (current-thread-processing-items?)
     ;; If the task was previously queued, remove it from the queue
 	(when previously-queued?
-	  (.TryDequeue this task))
+	  (.parentTryDequeue this task))
 	 ;; Try to run task
-	(.TryExecuteTask this task)))
+	(.parentTryExecuteTask this task)))
 
 
 (defn -TryDequeue 
   "Attempt to remove a previously scheduled task from the scheduler"
   [this ^Task task]
-  (let [ts (tasks this)]
-    (locking ts
-        (.Remove ts task))))
+  (let [^|System.Collections.Generic.LinkedList`1[System.Threading.Tasks.Task]| 
+        tasks (get-state this .tasks)]
+    (locking tasks
+        (.Remove tasks task))))
 	
 
 (defn -get_MaximumConcurrencyLevel [this]
-  (int (max-degree this)))
+  (int (get-state this .max-degree)))
 
 (defn -GetScheduledTasks [this]  
   (let [^Boolean taken? false
-        ts (tasks this)]
+        ^|System.Collections.Generic.LinkedList`1[System.Threading.Tasks.Task]|  
+		 tasks (get-state this .tasks)]
     (try 
-	  (Monitor/TryEnter ts (by-ref taken?))
+	  (Monitor/TryEnter tasks (by-ref taken?))
 	  (if taken?
-		(System.Linq.Enumerable/ToArray (type-args Task) ts)
+		(System.Linq.Enumerable/ToArray (type-args Task) tasks)
 		(throw (NotSupportedException.)))
 	  (finally
         (when taken?
-		  (Monitor/Exit ts))))))
+		  (Monitor/Exit tasks))))))
