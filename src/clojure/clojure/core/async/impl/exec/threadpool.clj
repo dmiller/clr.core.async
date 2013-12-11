@@ -39,4 +39,4 @@
   ([^TaskFactory tf]
      (reify impl/Executor
 	    (impl/exec [this r]
-		   (.StartNew tf ^System.Action (gen-delegate System.Action [] r))))))
+		   (.StartNew tf ^System.Action (gen-delegate System.Action [] (r)))))))
