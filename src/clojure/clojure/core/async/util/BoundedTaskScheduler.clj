@@ -24,7 +24,7 @@
 	  :extends System.Threading.Tasks.TaskScheduler
 	  :constructors {[Int64][]}
 	  :init init
-	  :exposes-methods {TryExecuteTask parentTryExecuteTask
+	  :exposes-methods {TryExecuteTask superTryExecuteTask
 	                    TryDequeue parentTryDequeue})	  
  )
 
@@ -65,13 +65,10 @@
                (|System.Collections.Generic.LinkedList`1[System.Threading.Tasks.Task]|.)
 			   (atom 0))])
 
-(defmacro get-state [this field]
-  `(~field ^BtsState (.state ^clojure.core.async.util.BoundedTaskScheduler ~this)))
-  
 (defmacro update-delegate-count! 
   "Atomic updated of delegate count"
   [this f]
-  `(swap! ^clojure.lang.Atom (get-state ~this .num-delegates) ~f))
+  `(swap! ^clojure.lang.Atom (-> ~this .state .num-delegates) ~f))
   
   
 ;; Low-level thread pool management  
@@ -85,7 +82,7 @@
     ;; process all available items in queue
 	(loop []
 	  (let [^|System.Collections.Generic.LinkedList`1[System.Threading.Tasks.Task]|  
-	        tasks (get-state this .tasks)
+	        tasks (-> this .state .tasks)
   	        ^Task item
           	  (locking tasks
 			    ;; When there are no more items to be processed,
@@ -98,7 +95,7 @@
 				  (.RemoveFirst tasks)
 				  t1)))]
 	    (when item
-	      (.parentTryExecuteTask this item)
+	      (.TryExecuteTask this item)
 		  (recur))))
 	(finally 
 	  (set-current-thread-processing-items! false))))
@@ -114,7 +111,8 @@
  
 ;; public method overrides  
 
-   
+(defn -TryExecuteTask [this ^Task task]
+  (.superTryExecuteTask this ^Task task))
 
 (defn -QueueTask 
   "Queue a task to the scheduler.
@@ -123,11 +121,11 @@
   schedule another."
   [this ^Task task]
   (let [^|System.Collections.Generic.LinkedList`1[System.Threading.Tasks.Task]| 
-        tasks (get-state this .tasks)]
+        tasks (-> this .state .tasks)]
     (locking tasks
 	  (.AddLast tasks task)
-	  (when (< (long @(get-state this .num-delegates)) (get-state this .max-degree))
-  	    (update-delegate-count! this inc)
+	  (when (< (long @(-> this .state .num-delegates)) (-> this .state .max-degree))
+	    (update-delegate-count! this inc)
         (notify-thread-pool-of-pending-work this)))))
 
 						
@@ -140,27 +138,27 @@
   (when (current-thread-processing-items?)
     ;; If the task was previously queued, remove it from the queue
 	(when previously-queued?
-	  (.parentTryDequeue this task))
+	  (.TryDequeue this task))
 	 ;; Try to run task
-	(.parentTryExecuteTask this task)))
+	(.TryExecuteTask this task)))
 
 
 (defn -TryDequeue 
   "Attempt to remove a previously scheduled task from the scheduler"
   [this ^Task task]
   (let [^|System.Collections.Generic.LinkedList`1[System.Threading.Tasks.Task]| 
-        tasks (get-state this .tasks)]
+        tasks (-> this .state .tasks)]
     (locking tasks
         (.Remove tasks task))))
 	
 
 (defn -get_MaximumConcurrencyLevel [this]
-  (int (get-state this .max-degree)))
+  (int (-> this .state .max-degree)))
 
 (defn -GetScheduledTasks [this]  
   (let [^Boolean taken? false
         ^|System.Collections.Generic.LinkedList`1[System.Threading.Tasks.Task]|  
-		 tasks (get-state this .tasks)]
+		 tasks (-> this .state .tasks)]
     (try 
 	  (Monitor/TryEnter tasks (by-ref taken?))
 	  (if taken?
