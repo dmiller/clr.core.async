@@ -57,8 +57,13 @@
           (recur (inc i))))
       (SkipListNode. k v arr))))
 
+(defn safe-aget	[^|System.Object[]| a ^long i]
+  (when (and (< i (alength a))
+             (>= i 0))
+    (aget a i)))
+	   
 (defmacro aget-forward [x i]                                                               ;;; DM: Added
-  `(aget ^|System.Object[]| (.-forward ~(with-meta x {:tag SkipListNode})) ~i))            ;;; DM: Added
+  `(safe-aget (.-forward ~(with-meta x {:tag SkipListNode})) ~i))            ;;; DM: Added
 	  
 (defn least-greater-node
   ([x k level] (least-greater-node x k level nil))
@@ -97,11 +102,11 @@
                 (aset update i header)
                 (recur (inc i))))
             (set! level new-level))
-          (let [^SkipListNode x (skip-list-node k v (make-array Object new-level))]    ;;; DM: Added Object
+          (let [^SkipListNode x (skip-list-node k v new-level)]    ;;; (make-array new-level is wrong?
             (loop [i 0]
               (when (<= i level)
                 (let [^|System.Object[]| links (.-forward ^SkipListNode (aget update i))]
-                  (aset ^|System.Object[]| (.-forward x) i (aget links i))
+                  (aset ^|System.Object[]| (.-forward x) i (safe-aget links i))
                   (aset links i x)))))))))
 
   (remove [coll k]
@@ -112,7 +117,7 @@
         (loop [i 0]
           (when (<= i level)
             (let [^|System.Object[]| links (.-forward ^SkipListNode (aget update i))]
-              (if (identical? (aget links i) x)
+              (if (identical? (safe-aget links i) x)
                 (do
                   (aset links i (aget-forward x i))
                   (recur (inc i)))
@@ -187,8 +192,8 @@
 (def ^:const TIMEOUT_RESOLUTION_MS 10)
 
 ;;; ADDED
-(defn- current-time-millis []
-  (* 10000 (.Ticks (DateTime/Now))))
+(defn current-time-millis []
+  (quot (.Ticks (DateTime/Now)) 10000))
 
 (deftype TimeoutQueueEntry [channel ^long timestamp]
   IDelayed                                                 ;;; Delayed
@@ -198,12 +203,15 @@
                                                            ;;;    TimeUnit/MILLISECONDS))
   (CompareTo							                   ;;; compareTo
    [this other]
-   (let [ostamp (.timestamp ^TimeoutQueueEntry other)]
+   (let [ostamp (.-timestamp other)]
      (if (< timestamp ostamp)
        -1
        (if (= timestamp ostamp)
          0
          1))))
+  Object
+  (ToString [this]
+    (str "TQE: " timestamp))
   impl/Channel
   (close! [this]
     (impl/close! channel)))
