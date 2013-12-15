@@ -125,7 +125,7 @@ namespace clojure.core.async
             for (; ; )
             {
                 int i = (j - 1) / 2;
-                if (i == j || !Less(j, i))
+                if (j==0 || !Less(j,i))
                     break;
                 Swap(i, j);
                 j = i;

@@ -47,8 +47,8 @@ namespace clojure.core.async
         {
             lock (this) 
             {
+                T first = (T)_queue.Peek(); 
                 _queue.Push(x);
-                T first = (T)_queue.Peek();
                 if ( first == null || ((IDelayed)x).CompareTo((IDelayed)first) < 0)
                     Monitor.PulseAll(this);
             }
