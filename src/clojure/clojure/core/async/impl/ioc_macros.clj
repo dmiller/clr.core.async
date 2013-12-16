@@ -428,7 +428,13 @@
       ret-id (add-instruction (->Const ::value))]
      ret-id)))
 
-(defmethod sexpr-to-ssa 'try
+(defmethod sexpr-to-ssa 'quote
+  [expr]
+  (gen-plan
+   [ret-id (add-instruction (->Const expr))]
+   ret-id))
+
+ (defmethod sexpr-to-ssa 'try
   [[_ & body]]
   (let [finally-fn (every-pred seq? (comp (partial = 'finally) first))
         catch-fn (every-pred seq? (comp (partial = 'catch) first))
