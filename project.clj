@@ -8,6 +8,7 @@
   :plugins [[lein-clr "0.2.0"]]
   :deploy-repositories [["clojars" {:url "https://clojars.org/repo/"
                                     :sign-releases  false}]]
+  :global-vars {*warn-on-reflection* true}
   :source-paths ["src/clojure"]
   :test-paths ["test/clojure"]
   :aot [clojure.core.async.util.BoundedTaskScheduler]
