@@ -553,8 +553,14 @@
           (if (or (get locals s)
                   (special-override? s))
             form
-            (let [expanded (macroexpand-1 form)]
-              (if (= expanded form)
+            (let [LOCAL_ENV clojure.lang.Compiler/LocalEnvVar               ;;; clojure.lang.Compiler/LOCAL_ENV
+                  expanded (try
+                             (push-thread-bindings
+                              {LOCAL_ENV  (merge @LOCAL_ENV locals)})
+                             (macroexpand-1 form)
+                             (finally
+                               (pop-thread-bindings)))]
+			(if (= expanded form)
                 form
                 (recur expanded))))
           form)))))
