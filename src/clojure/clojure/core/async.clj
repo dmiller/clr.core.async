@@ -355,26 +355,26 @@
           (ioc/run-state-machine state#))))
      c#))
 
-#_(defonce ^:private ^Executor thread-macro-executor
+#_(defonce ^:private ^Executor thread-macro-executor            ;;; readlly we don't need this
   (Executors/newCachedThreadPool (conc/counted-thread-factory "async-thread-macro-%d" true)))
 
-#_(defn thread-call
+(defn thread-call
   "Executes f in another thread, returning immediately to the calling
   thread. Returns a channel which will receive the result of calling
   f when completed."
   [f]
   (let [c (chan 1)]
-    (.execute thread-macro-executor
-              (fn []
+    (System.Threading.Tasks.Task/Run                           ;;;    .execute thread-macro-executor
+              (gen-delegate System.Action []                   ;;;   fn []
                 (let [ret (try (f)
-                               (catch Throwable t
+                               (catch Exception t              ;;; Throwable
                                  nil))]
                   (when-not (nil? ret)
                     (>!! c ret))
                   (close! c))))
     c))
 
-#_(defmacro thread
+(defmacro thread
   "Executes the body in another thread, returning immediately to the
   calling thread. Returns a channel which will receive the result of
   the body when completed."
