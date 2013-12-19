@@ -73,9 +73,13 @@
            (runner (loop [a :a b :b n 1]
                      (if (pos? n)
                        (recur b a (dec n)) ;; swap bindings
-                       [a b]))))))
-  
-  (testing "let expressions"
+                       [a b])))))
+    (is (= 1
+           (runner (loop [x 0
+                          y (inc x)]
+                     y)))))  
+
+					 (testing "let expressions"
     (is (= 3
            (runner (let [x 1 y 2]
                      (+ x y))))))
