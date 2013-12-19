@@ -621,6 +621,11 @@
   [x]
   (-item-to-ssa `(hash-map ~@(mapcat identity x))))
 
+(defmethod -item-to-ssa :record
+  [x]
+  (-item-to-ssa `(~(symbol (.Name (class x)) "create")     ;;; getName
+                  (hash-map ~@(mapcat identity x)))))
+
 (defmethod -item-to-ssa :vector
   [x]
   (-item-to-ssa `(vector ~@x)))
