@@ -17,7 +17,8 @@
             [clojure.core.async.impl.protocols :as impl]
 			[clojure.core.async.impl.mutex :as mutex]             ;;; DM:Added
 			[clojure.core.async.util.atomic :as atomic]            ;;; DM:Added
-            [clojure.core.async.impl.dispatch :as dispatch])
+            [clojure.core.async.impl.dispatch :as dispatch]
+			[clojure.set :refer (intersection)])
   (:import [clojure.core.async.impl.mutex ILock]                  ;;; [java.util.concurrent.locks Lock]
            [clojure.core.async.util.atomic IAtomicArray]))        ;;; [java.util.concurrent.atomic AtomicReferenceArray]
 
@@ -226,14 +227,32 @@
   (terminate-block [this state-sym _]
     `(~f ~state-sym ~blk ~@values)))
 
-(defrecord Set [set-id value]
+(defn- emit-clashing-binds
+  [recur-nodes ids clashes]
+  (let [temp-binds (reduce
+                    (fn [acc i]
+                      (assoc acc i (gensym "tmp")))
+                    {} clashes)]
+    (concat
+     (mapcat (fn [i]
+            `[~(temp-binds i) ~i])
+          clashes)
+     (mapcat (fn [node id]
+               `[~node ~(get temp-binds id id)])
+             recur-nodes
+             ids))))
+
+(defrecord Recur [recur-nodes ids]
   IInstruction
-  (reads-from [this] [value])
-  (writes-to [this] [set-id])
+  (reads-from [this] ids)
+  (writes-to [this] recur-nodes)
   (block-references [this] [])
   IEmittableInstruction
   (emit-instruction [this state-sym]
-    `[~set-id ~value]))
+    (if-let [overlap (seq (intersection (set recur-nodes) (set ids)))]
+      (emit-clashing-binds recur-nodes ids overlap)
+      (mapcat (fn [r i]
+                `[~r ~i]) recur-nodes ids))))
 
 (defrecord Call [refs]
   IInstruction
@@ -495,9 +514,8 @@
                      (count recurs))
                   "Wrong number of arguments to recur")
           (no-op))
-    _ (all (map #(add-instruction (->Set %1 %2))
-                recurs
-                val-ids))
+    _ (add-instruction (->Recur recurs val-ids))
+		  
     recur-point (get-binding :recur-point)
     
     _ (add-instruction (->Jmp nil recur-point))]
