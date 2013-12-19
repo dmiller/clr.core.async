@@ -16,6 +16,11 @@
 
 (set! *warn-on-reflection* true)
 
+(defmacro assert-unlock [lock test msg]
+  `(when-not ~test
+     (.unlock ~lock)
+     (throw (new Exception (str "Assert failed: " ~msg "\n" (pr-str '~test))))))       ;;;  AssertionError
+
 (defn box [val]
   (reify clojure.lang.IDeref
          (deref [_] val)))
@@ -118,7 +123,12 @@
                      nil))))
            (do
              (when (impl/active? handler)
-               (.AddFirst puts [handler val]))                        ;;; .add
+               (assert-unlock mutex
+                               (< (.Count puts) impl/MAX-QUEUE-SIZE)                         ;;; .size
+                               (str "No more than " impl/MAX-QUEUE-SIZE
+                                    " pending puts are allowed on a single channel."
+                                    " Consider using a windowed buffer."))			 
+               (.AddLast puts [handler val]))                                                ;;; .add
              (.unlock mutex)
              nil))))))
   
@@ -216,7 +226,11 @@
                  (box nil)
                  nil))
              (do
-               (.AddFirst takes handler)      ;;; .add
+                (assert-unlock mutex
+                               (< (.Count takes) impl/MAX-QUEUE-SIZE)                        ;;; .size
+                               (str "No more than " impl/MAX-QUEUE-SIZE
+                                    " pending takes are allowed on a single channel."))
+			   (.AddLast takes handler)                                                      ;;; .add
                (.unlock mutex)
                nil)))))))
 
