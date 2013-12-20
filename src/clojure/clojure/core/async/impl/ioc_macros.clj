@@ -341,9 +341,17 @@
                           :else :default)))
 
 (defn item-to-ssa [x]
-  (-item-to-ssa x))
+  (fn [p]
+    (let [[itm p :as result] ((-item-to-ssa x) p)]
+      (if (and (instance? clojure.lang.IObj x)
+               (instance? clojure.lang.IObj itm))
+        [(with-meta itm
+           (merge (meta itm)
+                  (meta x)))
+         p]
+        result))))
 
-;; given an sexpr, dispatch on the first item 
+;; given an sexpr, dispatch on the first item
 (defmulti sexpr-to-ssa (fn [[x & _]]
                          x))
 
@@ -526,7 +534,7 @@
     _ (add-instruction (->Recur recurs val-ids))
 		  
     recur-point (get-binding :recur-point)
-    
+
     _ (add-instruction (->Jmp nil recur-point))]
    ::terminated))
 
@@ -538,7 +546,7 @@
     else-blk (add-block)
     final-blk (add-block)
     _ (add-instruction (->CondBr test-id then-blk else-blk))
-    
+
     _ (set-block then-blk)
     then-id (item-to-ssa then)
     _ (if (not= then-id ::terminated)
@@ -803,7 +811,7 @@
    ILock                                            ;;; Lock
    (lock [_])
    (unlock [_])
-   
+
    impl/Handler
    (active? [_] true)
    (lock-id [_] 0)
@@ -859,4 +867,3 @@
   (-> (parse-to-state-machine body env user-transitions)
       second
       (emit-state-machine num-user-params user-transitions)))
-
