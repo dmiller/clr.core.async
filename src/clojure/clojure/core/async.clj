@@ -888,7 +888,7 @@
                          (fn [ret]
                            (aset rets i ret)
                            (when (zero? (swap! dctr dec))
-                             (put! dchan (System.Array/Clone rets)))))       ;;; (java.util.Arrays/copyOf rets cnt)  Clone okay since (.Length rets) == cnt
+                             (put! dchan (.Clone rets)))))       ;;; (java.util.Arrays/copyOf rets cnt)  ; Clone okay since (.Length rets) == cnt
                        (range cnt))]
        (go-loop []
          (reset! dctr cnt)
