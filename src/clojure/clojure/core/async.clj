@@ -375,14 +375,16 @@
   f when completed."
   [f]
   (let [c (chan 1)]
-    (System.Threading.Tasks.Task/Run                           ;;;    .execute thread-macro-executor
-              (gen-delegate System.Action []                   ;;;   fn []
-                (let [ret (try (f)
-                               (catch Exception t              ;;; Throwable
-                                 nil))]
-                  (when-not (nil? ret)
-                    (>!! c ret))
-                  (close! c))))
+    (let [binds (clojure.lang.Var/getThreadBindingFrame)]  
+      (System.Threading.Tasks.Task/Run                                 ;;;    .execute thread-macro-executor
+                (gen-delegate System.Action []                         ;;;   fn []
+                  (clojure.lang.Var/resetThreadBindingFrame binds)				
+                  (let [ret (try (f)
+                                 (catch Exception t                    ;;; Throwable
+                                   nil))]
+                    (when-not (nil? ret)
+                      (>!! c ret))
+                    (close! c)))))
     c))
 
 (defmacro thread
