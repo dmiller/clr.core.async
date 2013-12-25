@@ -2,12 +2,22 @@
 
 A port of [clojure/core.async](https://github.com/clojure/core.async) library to ClojureCLR.
 
-> A Clojure library designed to provide facilities for async programming and communication
+> A Clojure library designed to provide facilities for async programming and communication.
 
 # Releases
 
 This is not not yet in release.  The port is in progress.
 
+## Documentation
+
+* [Rationale](http://clojure.com/blog/2013/06/28/clojure-core-async-channels.html)
+* [API docs](http://clojure.github.io/core.async/)
+* [Code walkthrough](https://github.com/clojure/core.async/blob/master/examples/walkthrough.clj)
+
+## Presentations
+
+* [Rich Hickey on core.async](http://www.infoq.com/presentations/clojure-core-async)
+* Tim Baldridge on go macro internals - [part 1](https://www.youtube.com/watch?v=R3PZMIwXN_g) [part 2](https://www.youtube.com/watch?v=SI7qtuuahhU)
 
 # Copyright and License #
 
