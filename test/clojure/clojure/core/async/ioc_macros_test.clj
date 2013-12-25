@@ -55,8 +55,12 @@
     (is (= nil
            (runner (when (pause false)
                      (pause true))))))
-  
-    (testing "quote"
+
+  (testing "dot forms"
+    (is (= 42 (runner (. Int64 (Parse "42")))))         ;;; Long  parseLong
+    (is (= 42 (runner (. Int64 Parse "42")))))          ;;; Long  parseLong
+
+  (testing "quote"
     (is (= '(1 2 3)
            (runner (pause '(1 2 3))))))
 
