@@ -236,8 +236,20 @@
                     (catch Exception ex (throw ex))        ;;; Throwable
                     (finally (swap! a inc))))
                  (catch ArgumentException ex ex))]         ;;; AssertionError
-      (is (= @a 2)))))
+      (is (= @a 2)))
 
+    (let [a (atom 0)
+          v (try (runner
+                  (try
+                    (try
+                      (throw (ArgumentException. (str (pause 42))))          ;;; (AssertionError. (pause 42))
+                      (catch Exception ex (pause (throw ex)))                ;;; Throwable
+                      (finally (pause (swap! a inc))))
+                    (catch Exception ex (pause (throw ex)))                  ;;; Throwable
+                    (finally (pause (swap! a inc)))))
+                 (catch ArgumentException ex ex))]                           ;;; AssertionError
+       (is (= @a 2)))))
+	   
 (defn identity-chan
   "Defines a channel that instantly writes the given value"
   [x]
