@@ -193,7 +193,47 @@
                (assert false)
                (catch Exception ex true)                ;;; Throwable
                (finally (reset! a true))))]
-      (is (and @a v)))))
+      (is (and @a v)))
+
+    (let [a (atom false)
+          v (try (runner
+                  (try
+                    (assert false)
+                    (finally (reset! a true))))
+                 (catch Exception ex ex))]               ;;; Throwable
+      (is (and @a v)))
+
+
+    (let [a (atom 0)
+          v (runner
+             (try
+               (try
+                 42
+                 (finally (swap! a inc)))
+               (finally (swap! a inc))))]
+      (is (= @a 2)))
+
+    (let [a (atom 0)
+          v (try (runner
+                  (try
+                    (try
+                      (throw (ArgumentException. "42"))    ;;; (AssertionError. 42)
+                      (finally (swap! a inc)))
+                    (finally (swap! a inc))))
+                 (catch ArgumentException ex ex))]            ;;; AssertionError
+      (is (= @a 2)))
+
+    (let [a (atom 0)
+          v (try (runner
+                  (try
+                    (try
+                      (throw (ArgumentException. "42"))    ;;; (AssertionError. 42)
+                      (catch Exception ex (throw ex))      ;;; Throwable
+                      (finally (swap! a inc)))
+                    (catch Exception ex (throw ex))        ;;; Throwable
+                    (finally (swap! a inc))))
+                 (catch ArgumentException ex ex))]         ;;; AssertionError
+      (is (= @a 2)))))
 
 (defn identity-chan
   "Defines a channel that instantly writes the given value"
