@@ -6,7 +6,7 @@
 ;;   the terms of this license.
 ;;   You must not remove this notice, or any other, from this software.
 ;;;  Ported to ClojureCLR by David Miller.
-(ns ^{:skip-wiki true} 
+(ns ^{:skip-wiki true}
   clojure.core.async.impl.buffers
   (:require [clojure.core.async.impl.protocols :as impl])
   )                                                       ;;;(:import [java.util LinkedList Queue])
@@ -31,6 +31,7 @@
 
 
 (deftype DroppingBuffer [^|System.Collections.Generic.LinkedList`1[System.Object]| buf ^long n]    ;;; LinkedList
+  impl/UnblockingBuffer
   impl/ABuffer
   (full? [this]
     false)
@@ -47,6 +48,7 @@
   (DroppingBuffer. (|System.Collections.Generic.LinkedList`1[System.Object]|.) n))                  ;;; LinkedList.
 
 (deftype SlidingBuffer [^|System.Collections.Generic.LinkedList`1[System.Object]| buf ^long n]      ;;; LinkedList
+  impl/UnblockingBuffer
   impl/ABuffer
   (full? [this]
     false)
