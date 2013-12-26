@@ -7,13 +7,11 @@
 ;;   You must not remove this notice, or any other, from this software.
 ;;;  Ported to ClojureCLR by David Miller
 
-(assembly-load-from "clojure.core.async.util.BoundedTaskScheduler.dll")
-
 (ns clojure.core.async.impl.exec.threadpool
   (:require [clojure.core.async.impl.protocols :as impl]
+            [clojure.core.async.util.bts :as bts]
             [clojure.core.async.impl.concurrent :as conc])
-  (:import  [clojure.core.async.util BoundedTaskScheduler]      ;;; DM:Added
-            [System.Threading.Tasks TaskFactory]))              ;;; [java.util.concurrent Executors Executor]
+  (:import  [System.Threading.Tasks TaskFactory]))              ;;; [java.util.concurrent Executors Executor]
 
 (set! *warn-on-reflection* true)
 
@@ -32,7 +30,7 @@
 ;;;       (impl/exec [this r]
 ;;;         (.execute executor-svc ^Runnable r)))))
 
-(defonce ^TaskFactory the-scheduler  (TaskFactory. (BoundedTaskScheduler.  (+ 2 conc/processors))))
+(defonce ^TaskFactory the-scheduler  (TaskFactory. (bts/bounded-task-scheduler  (+ 2 conc/processors))))
 
 (defn bounded-task-executor
   ([] (bounded-task-executor the-scheduler))
