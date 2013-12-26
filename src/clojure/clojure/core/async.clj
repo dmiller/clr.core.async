@@ -376,16 +376,17 @@
   f when completed."
   [f]
   (let [c (chan 1)]
-    (let [binds (clojure.lang.Var/getThreadBindingFrame)]  
-      (System.Threading.Tasks.Task/Run                                 ;;;    .execute thread-macro-executor
-                (gen-delegate System.Action []                         ;;;   fn []
-                  (clojure.lang.Var/resetThreadBindingFrame binds)				
-                  (let [ret (try (f)
-                                 (catch Exception t                    ;;; Throwable
-                                   nil))]
-                    (when-not (nil? ret)
-                      (>!! c ret))
-                    (close! c)))))
+    (let [binds (clojure.lang.Var/getThreadBindingFrame)
+	      ^System.Action action 
+		  (gen-delegate System.Action []                         ;;;   fn []
+              (clojure.lang.Var/resetThreadBindingFrame binds)				
+              (let [ret (try (f)
+                             (catch Exception t                    ;;; Throwable
+                                nil))]
+                (when-not (nil? ret)
+                  (>!! c ret))
+                (close! c)))]  
+      (System.Threading.Tasks.Task/Run action))                                 ;;;    .execute thread-macro-executor
     c))
 
 (defmacro thread
@@ -1007,7 +1008,7 @@
                               (recur (make-array Object n) 0)))))
                   (do (when (> idx 0)
                         (let [narray (make-array Object idx)]
-                          (System.Array/Copy arr 0 narray 0 idx)          ;;; System/arraycopy
+                          (System.Array/Copy ^Array arr 0 ^Array narray 0 (long idx))          ;;; System/arraycopy, added type hints
                           (>! out (vec narray))))
                       (close! out))))))
        out)))

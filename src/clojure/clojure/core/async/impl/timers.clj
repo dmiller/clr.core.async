@@ -62,14 +62,14 @@
              (>= i 0))
     (aget a i)))
 	   
-(defmacro aget-forward [x i]                                                               ;;; DM: Added
-  `(safe-aget (.-forward ~(with-meta x {:tag SkipListNode})) ~i))            ;;; DM: Added
+(defmacro aget-forward [x i]                                                  ;;; DM: Added
+  `(safe-aget (.-forward ~(with-meta x {:tag 'SkipListNode})) ~i))            ;;; DM: Added
 	  
 (defn least-greater-node
   ([x k level] (least-greater-node x k level nil))
   ([x k level update]
     (if-not (neg? level)
-      (let [x (loop [^SkipListNode x x]
+      (let [x (loop [x x]
                 (if-let [^SkipListNode x' (aget-forward x level)]
                   (if (< (.-key x') k)
                     (recur x')
@@ -91,7 +91,7 @@
   ISkipList                                                              ;;; Object
   (put [coll k v]
     (let [^|System.Object[]| update (make-array Object MAX_LEVEL)                           ;;; DM: Added Object and type hint
-          ^SkipListNode x (least-greater-node header k level update)
+          x (least-greater-node header k level update)
           ^SkipListNode x (aget-forward x 0)]
       (if (and (not (nil? x)) (== (.-key x) k))
         (set! (.-val x) v)
@@ -111,7 +111,7 @@
 
   (remove [coll k]
     (let [^|System.Object[]| update (make-array Object MAX_LEVEL)                           ;;; DM: Added Object
-          ^SkipListNode x (least-greater-node header k level update)
+          x (least-greater-node header k level update)
           ^SkipListNode x (aget-forward x 0)]
       (when (and (not (nil? x)) (== (.-key x) k))
         (loop [i 0]
@@ -123,14 +123,14 @@
                   (recur (inc i)))
                 (recur (inc i))))))
         (while (and (> level 0)
-                    (nil? (aget-forward ^SkipListNode header level)))
+                    (nil? (aget-forward header level)))
           (set! level (dec level))))))
 
   (ceilingEntry [coll k]
-    (loop [^SkipListNode x header level level]
+    (loop [x header level level]
       (if-not (neg? level)
         (let [nx (loop [x x]
-                   (let [^SkipListNode x' (aget-forward ^SkipListNode x level)]
+                   (let [^SkipListNode x' (aget-forward x level)]
                      (when-not (nil? x')
                        (if (>= (.-key x') k)
                          x'
@@ -142,10 +142,10 @@
           x))))
   
   (floorEntry [coll k]
-    (loop [^SkipListNode x header level level]
+    (loop [x header level level]
       (if-not (neg? level)
-        (let [nx (loop [^SkipListNode x x]
-                   (let [^SkipListNode x' (aget-forward ^SkipListNode x level)]
+        (let [nx (loop [x x]
+                   (let [^SkipListNode x' (aget-forward x level)]
                      (if-not (nil? x')
                        (if (> (.-key x') k)
                          x
@@ -164,8 +164,8 @@
               (lazy-seq
                 (when-not (nil? node)
                   (cons [(.-key ^SkipListNode node) (.-val ^SkipListNode node)]
-                    (iter (aget-forward ^SkipListNode node 0))))))]
-      (iter (aget-forward ^SkipListNode header 0))))
+                    (iter (aget-forward node 0))))))]
+        (iter (aget-forward header 0))))
 
   ;;;IPrintWithWriter
   ;;;(-pr-writer [coll writer opts]
@@ -203,7 +203,7 @@
                                                            ;;;    TimeUnit/MILLISECONDS))
   (CompareTo							                   ;;; compareTo
    [this other]
-   (let [ostamp (.-timestamp other)]
+   (let [ostamp (.-timestamp other)]                       ;;; if we hint to TimeoutQueueEntry to avoid reflection, .-timestamp gives zero. ???
      (if (< timestamp ostamp)
        -1
        (if (= timestamp ostamp)
@@ -239,7 +239,9 @@
       (recur))))
 
 (defonce timeout-daemon
-  (doto (System.Threading.Thread. ^System.Threading.ThreadStart (gen-delegate System.Threading.ThreadStart [] (timeout-worker)))   ;;;(Thread. ^Runnable timeout-worker "clojure.core.async.timers/timeout-daemon")
-    (.set_Name "clojure.core.async.timers/timeout-daemon")                                           ;;; DM:Added
-    (.set_IsBackground true)                                                                         ;;;(.setDaemon true)
-    (.Start)))                                                                                       ;;;
+  (let [^System.Threading.ThreadStart start                                    ;;; DM:Added
+        (gen-delegate System.Threading.ThreadStart [] (timeout-worker))]       ;;; DM:Added
+    (doto (System.Threading.Thread. start)                                     ;;;(Thread. ^Runnable timeout-worker "clojure.core.async.timers/timeout-daemon")
+      (.set_Name "clojure.core.async.timers/timeout-daemon")                   ;;; DM:Added
+      (.set_IsBackground true)                                                                         ;;;(.setDaemon true)
+      (.Start))))                                                                                      ;;;
